@@ -10,6 +10,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/password_manager
       - SPRING_DATASOURCE_USERNAME=admin
       - SPRING_DATASOURCE_PASSWORD=admin123
+#      - JWT_SECRET=your-secure-secret-key-here
     depends_on:
       - db
     networks:
