@@ -38,5 +38,21 @@ public class PasswordController {
         return ResponseEntity.ok(passwords);
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "Update a password", description = "Updates an existing password")
+    @ApiResponse(responseCode = "200", description = "Password updated successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    public ResponseEntity<Password> updatePassword(@PathVariable Long id, @RequestBody PasswordDTO passwordDTO) {
+        Password password = passwordService.updatePassword(id, passwordDTO);
+        return ResponseEntity.ok(password);
+    }
 
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a password", description = "Deletes an existing password")
+    @ApiResponse(responseCode = "200", description = "Password deleted successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    public ResponseEntity<Void> deletePassword(@PathVariable Long id) {
+        passwordService.deletePassword(id);
+        return ResponseEntity.ok().build();
+    }
 }

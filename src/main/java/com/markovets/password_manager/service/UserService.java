@@ -30,4 +30,19 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    public User createAdmin(UserDTO userDTO) {
+        if (userRepository.findByUsername(userDTO.getUsername()).isPresent() ||
+                userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Username or email already exists");
+        }
+
+        User user = new User();
+        user.setUsername(userDTO.getUsername());
+        user.setEmail(userDTO.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(userDTO.getPassword()));
+        user.setRole("ROLE_ADMIN");
+
+        return userRepository.save(user);
+    }
 }

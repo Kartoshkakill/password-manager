@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,8 +36,16 @@ public class SecurityConfig {
     @Autowired
     private UserRepository userRepository;
 
-    private final String JWT_SECRET = "secret-key-1234567890secret-key-1234567890"; // Change to a secure key in production
-    private final Key JWT_KEY = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
+    @Value("${JWT_SECRET:secret-key-1234567890secret-key-1234567890}")
+    private String jwtSecret;
+
+    @Bean
+    public Key jwtKey() {
+        if (jwtSecret == null || jwtSecret.length() < 32) {
+            throw new IllegalStateException("JWT_SECRET must be at least 32 characters long");
+        }
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+    }
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -49,7 +58,7 @@ public class SecurityConfig {
                 .map(user -> org.springframework.security.core.userdetails.User
                         .withUsername(user.getUsername())
                         .password(user.getPasswordHash())
-                        .roles(user.getRole())
+                        .roles(user.getRole().startsWith("ROLE_") ? user.getRole().substring(5) : user.getRole())
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
@@ -65,6 +74,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/users/register", "/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/passwords/**").hasRole("USER")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -75,7 +85,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(userDetailsService(), JWT_KEY);
+        return new JwtAuthenticationFilter(userDetailsService(), jwtKey());
     }
 
     public static class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -101,8 +111,8 @@ public class SecurityConfig {
                             .getPayload()
                             .getSubject();
                     if (username != null) {
-                        org.springframework.security.core.userdetails.UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                        var userDetails = userDetailsService.loadUserByUsername(username);
+                        var auth = new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities());
                         SecurityContextHolder.getContext().setAuthentication(auth);
                     }

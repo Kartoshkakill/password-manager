@@ -4,9 +4,6 @@ import com.markovets.password_manager.dto.AuthRequest;
 import com.markovets.password_manager.model.User;
 import com.markovets.password_manager.repository.UserRepository;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import java.security.Key;
 import java.util.Date;
@@ -32,8 +31,9 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    private final String JWT_SECRET = "secret-key-1234567890secret-key-1234567890";
-    private final Key JWT_KEY = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
+    @Autowired
+    private Key jwtKey; // Використовуємо Key із SecurityConfig
+
     private final long JWT_EXPIRATION = 86400000; // 24 hours
 
     @PostMapping("/login")
@@ -53,7 +53,7 @@ public class AuthController {
                 .claim("roles", user.getRole())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
-                .signWith(JWT_KEY)
+                .signWith(jwtKey)
                 .compact();
 
         Map<String, String> response = new HashMap<>();
